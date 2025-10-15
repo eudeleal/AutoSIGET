@@ -1,0 +1,55 @@
+# --- AMBIENTE VIRTUAL ---
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+
+# --- CACHE E COMPILAÇÃO ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- LOGS E SAÍDAS ---
+LOGs/
+*.log
+
+# --- DADOS TEMPORÁRIOS OU PRIVADOS ---
+*.json
+*.xlsx
+*.bak
+*.tmp
+
+# --- BUILD E DISTRIBUIÇÃO ---
+build/
+#dist/
+*.egg-info/
+*.egg
+*.spec
+
+# --- FERRAMENTAS E CONFIGURAÇÕES LOCAIS ---
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Sistema Operacional
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- OUTROS ---
+# Backup / temporário
+~$*
+*.orig
+*.swp
+*.swo
+
+# =======================================
+# Autor: Eude Leal
+# Github: eudeleal
+# =======================================
+
+# Brasil
+# Salvador, BA - 2025
