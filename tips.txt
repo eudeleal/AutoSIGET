@@ -6,3 +6,5 @@ Usar um ID no CSV para "varrer" (for) procurando a chave primária do "bloco" da
 Mapeamento de dados no Py [maping]
 
 Linha 338, 357 - Remove try, tratar as excções
+
+Pegar tbm as viagens a nível de mostrar
