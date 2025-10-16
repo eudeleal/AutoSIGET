@@ -3,13 +3,20 @@
 # Versão refatorada por Eude — unificação CSV e controle por blocos
 # Mantém toda a lógica de preenchimento com pyautogui igual ao app_2.py
 
+#native
 import csv
 import os
 import time
+from datetime import datetime
+
+# pip install pyautogui, keyboard, tabulate
 import pyautogui
 import keyboard
-from datetime import datetime
 from tabulate import tabulate
+
+# Compilação:
+# pip install pyinstaller
+# pyinstaller --onefile app_3.py
 
 # -------------------------
 # Configurações / Globals
@@ -149,9 +156,10 @@ def formatar_hora_dig(h: str):
 def preencher_faixa(row, linha_label, faixaAnterior=None):
     """
     Executa os comandos de pyautogui para preencher uma faixa com base em 'row' (dict).
-    Recebe faixaAnterior (tupla de strings (FaixaInicio, FaixaFinal)) para detectar virada de dia.
+    Recebe faixaAnterior (strings (FaixaInicio) para detectar virada de dia.
     Observação: não faz waits por F10 aqui — apenas executa o preenchimento da faixa.
     """
+
     # preserva strings originais
     faixaIni_raw = row.get("FaixaInicio", row.get("FaixaInicio ", "")).strip()
     faixaFim_raw = row.get("FaixaFinal", row.get("FaixaFinal ", "")).strip()
@@ -172,11 +180,18 @@ def preencher_faixa(row, linha_label, faixaAnterior=None):
     # Início do preenchimento (mesma sequência de ações)
     pyautogui.write(faixaIni_dig)
     registrar_log(f"[{linha_label}] escreveu FaixaInicio '{faixaIni_log}'")
+    
     # console
-    print_user(f"{linha_label} • Preenchendo faixa de {faixaIni_log} à {faixaFim_log}")
+        #print_user(f"{linha_label} • Preenchendo faixa de {faixaIni_log} à {faixaFim_log}")
+    print(tabulate([[faixaIni_log, faixaFim_log, interv, tPerc, tTerm, frota]],
+               headers=["F. Inicio", "F. Final", "Interv.", "T. Perc.", "T. Term", "Frota"],
+               tablefmt="rounded_grid"))
 
     pyautogui.press("tab")
     registrar_log(f"[{linha_label}] tab → campo FaixaFinal")
+
+    # variável para evitar dupla verificação de faixa para o dia seguinte
+    faixaIniVerif = False
 
     # Detecta virada de dia: se faixaAnterior existe e hora atual < anterior (0000 case)
     if faixaAnterior:
@@ -185,8 +200,11 @@ def preencher_faixa(row, linha_label, faixaAnterior=None):
             if int(faixaIni_raw) < int(prev_ini):
                 registrar_log(f"[{linha_label}] virada detectada em FaixaInicio ({faixaIni_raw} < {prev_ini}) — confirmando Enter")
                 time.sleep(0.25)
+                pyautogui.press("tab")
                 pyautogui.press("enter")
                 time.sleep(0.4)
+                faixaIniVerif = True
+                registrar_log(f"[{linha_label}] faixaIniVerif definida como VERDADEIRA")
 
     pyautogui.write(faixaFim_dig)
     registrar_log(f"[{linha_label}] escreveu FaixaFinal '{faixaFim_log}'")
@@ -195,12 +213,13 @@ def preencher_faixa(row, linha_label, faixaAnterior=None):
     registrar_log(f"[{linha_label}] tab → campo Intervalo")
 
     # Detecta virada de dia no FaixaFinal em relação ao anterior
-    if faixaAnterior:
-        prev_fim = (faixaAnterior[1] or "").strip()
+    if faixaAnterior and not faixaIniVerif:
+        prev_fim = faixaIni_raw
         if prev_fim.isdigit() and faixaFim_raw.isdigit():
             if int(faixaFim_raw) < int(prev_fim):
                 registrar_log(f"[{linha_label}] virada detectada em FaixaFinal ({faixaFim_raw} < {prev_fim}) — confirmando Enter")
                 time.sleep(0.25)
+                pyautogui.press("tab")
                 pyautogui.press("enter")
                 time.sleep(0.4)
 
@@ -259,8 +278,12 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
         fim = bloco["fim"]
         count = bloco["count"]
 
-        print_user(f" >>> Iniciando bloco {id_bloco} ({count} faixas horárias)")
+            #print_user(f" >>> Iniciando bloco {id_bloco} ({count} faixas horárias)")
         registrar_log(f"INICIO_BLOCO {id_bloco} linhas {inicio+1}-{fim+1}")
+
+        print(tabulate([[id_bloco]],
+               headers=["Bloco"],
+               tablefmt="rounded_grid"))
 
         # itera dentro do bloco: trecho de linhas
         trecho = linhas[inicio:fim+1]
@@ -290,7 +313,7 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
             preencher_faixa(row, linha_label, faixaAnterior=faixaAnterior)
 
             # atualiza faixaAnterior para a próxima iteração (usa raw values)
-            faixaAnterior = (row.get("FaixaInicio", ""), row.get("FaixaFinal", ""))
+            faixaAnterior = (row.get("FaixaFim", ""))
 
             # controle de avanço: se não é a última faixa do bloco, espera F10;
             # se for a última, espera F10 para ir ao próximo bloco (ou F9)
@@ -322,7 +345,10 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
                 prox_idx = idx_bloco - bloco_inicio_index  # posição relativa no enumerate
                 if prox_idx < total_blocos - 1:
                     prox_id_bloco = blocos[bloco_inicio_index + prox_idx]["id_bloco"]
-                    print_user(f">>> Próximo bloco: {prox_id_bloco}")
+                    registrar_log(f">>> Próximo bloco: {prox_id_bloco}")
+                    print(tabulate([[prox_id_bloco, len(prox_id_bloco)]],
+               headers=["Prox. Bloco", "Qtd Faixas"],
+               tablefmt="rounded_grid"))
                 else:
                     prox_id_bloco = None
                     print_user(">>> Este foi o último bloco.")
@@ -362,9 +388,10 @@ def main():
     print("                    AUTOMA SIGET3000")
     print("=" * 60)
     print("Bem Vindo(a)")
-    print("Insira o nome do arquivo para iniciar")
+    print("Insira o nome do arquivo para iniciar, ENTER para confirmar o nome.")
     
     # escolha do CSV
+    print("")
     caminho_csv = input("Nome do CSV (sem .csv): ").strip() + ".csv"
     print_user(f"Arquivo selecionado: {caminho_csv}")
 
@@ -391,8 +418,14 @@ def main():
     # exibe blocos (resumido)
     print("")
     print("Blocos detectados:")
-    for idx, b in enumerate(blocos, start=1):
-        print(f"[{idx}] {b['id_bloco']} → linhas ({b['count']} faixas horárias)")
+    headers = ["N:", "ID Bloco", "Qtd. Faixas Horárias"]
+    tabela = [
+        [i + 1, b["id_bloco"], b["count"]]
+        for i, b in enumerate(blocos)
+    ]
+    print(tabulate(tabela, headers=headers, tablefmt="rounded_grid"))
+    #for idx, b in enumerate(blocos, start=1):
+    #    print(f"[{idx}] {b['id_bloco']} → linhas ({b['count']} faixas horárias)")
     print("")
 
     # escolhe bloco inicial
@@ -407,6 +440,23 @@ def main():
                 print_user("Entrada inválida — iniciando do primeiro bloco.")
         except:
             print_user("Entrada inválida — iniciando do primeiro bloco.")
+    
+    # Instruções antes de iniciar o programa
+    print("REQUISITOS E INSTRUÇÕES:")
+    print('''
+    Antes de iniciar preencha os seguintes requitos:
+          [] Abra o SIGET
+          [] Abra a aba "Parâmetros de linha"
+          [] Insira a OSO da linha a ser preenchida
+             se atentando ao SENTIDO
+          [] Limpe todas as faixas horárias do DIA e SENTIDO
+             que será preenchio
+          [] Posicione o cursor na primeira CÉLULA da 1ª linha de preenchimento
+
+    ''')
+
+    print("Pressione ENTER para continuar...")
+    keyboard.wait("enter")
 
     # confirma e inicia processamento
     print_user(f"Iniciando a partir do bloco {bloco_inicial}: {blocos[bloco_inicial-1]['id_bloco']}")
