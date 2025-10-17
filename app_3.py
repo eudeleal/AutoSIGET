@@ -10,13 +10,6 @@ import pyautogui
 import keyboard
 from tabulate import tabulate
 
-# Compilação:
-# pip install pyinstaller
-# pyinstaller --onefile app_3.py
-# ===========================================#
-
-
-
 # -------------------------
 # Configurações / Globals
 # -------------------------
