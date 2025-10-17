@@ -1,14 +1,10 @@
-#!/usr/bin/env python3
-# app_3.py
-# Versão refatorada por Eude — unificação CSV e controle por blocos
-# Mantém toda a lógica de preenchimento com pyautogui igual ao app_2.py
-
-#native
+#Bibliotecas nativas
 import csv
 import os
 import time
 from datetime import datetime
 
+# Bibliotecas
 # pip install pyautogui, keyboard, tabulate
 import pyautogui
 import keyboard
@@ -17,6 +13,9 @@ from tabulate import tabulate
 # Compilação:
 # pip install pyinstaller
 # pyinstaller --onefile app_3.py
+# ===========================================#
+
+
 
 # -------------------------
 # Configurações / Globals
@@ -47,11 +46,11 @@ def print_user(msg: str):
 # Escutador (marca parar_execucao)
 # -------------------------
 def escutador_tecla():
-    """Checa F9 (encerra). Deve ser chamado periodicamente dentro dos loops."""
+    """Checa F12 (encerra). Deve ser chamado periodicamente dentro dos loops."""
     global parar_execucao
-    if keyboard.is_pressed("F9"):
+    if keyboard.is_pressed("F12"):
         parar_execucao = True
-        print_user("Tecla F9 detectada — encerrando execução...")
+        print_user("Tecla F12 detectada — encerrando execução...")
 
 # -------------------------
 # Leitura do CSV (DictReader) + normalização das chaves
@@ -75,7 +74,7 @@ def carregar_csv(caminho_csv: str):
             nova = {}
             for k, v in row.items():
                 key = (k or "").strip()
-                # Some CSVs have extra spaces; ensure consistent keys
+                # Retira possíveis espaços
                 nova[key] = (v or "").strip()
             linhas.append(nova)
 
@@ -132,10 +131,55 @@ def gerar_blocos(linhas):
     return blocos
 
 # -------------------------
+# Seleção dos blocos
+# -------------------------
+def seletorBlocos(linhas, blocos):
+    # exibe blocos (resumido)
+    print("")
+    print("Blocos detectados:")
+    headers = ["N:", "ID Bloco", "Qtd. Faixas Horárias"]
+    tabela = [
+        [i + 1, b["id_bloco"], b["count"]]
+        for i, b in enumerate(blocos)
+    ]
+    print(tabulate(tabela, headers=headers, tablefmt="rounded_grid"))
+    #for idx, b in enumerate(blocos, start=1):
+    #    print(f"[{idx}] {b['id_bloco']} → linhas ({b['count']} faixas horárias)")
+    print("")
+    time.sleep(1)
+
+    # escolhe bloco inicial
+    bloco_inicial = 1
+    deNovo = True
+    while deNovo:
+        escolha = input(f"Digite o número do bloco para começar (1-{len(blocos)}): ").strip()
+        time.sleep(0.5)
+        if escolha and escolha.isdigit():
+            n = int(escolha)
+            if 1 <= n <= len(blocos):
+                bloco_inicial = n
+                deNovo = False
+            else:
+                print_user("Entrada inválida")
+                print("")
+                continue
+        else:
+            print_user("Entrada inválida")
+            print("")
+            continue
+
+    # confirma e inicia processamento
+    print_user(f"Iniciando a partir do bloco {bloco_inicial}: {blocos[bloco_inicial-1]['id_bloco']}")
+    registrar_log(f"USUARIO iniciou processamento a partir do bloco {bloco_inicial}")
+
+    # chama rotina de preenchimento
+    preencher_blocos(linhas, blocos, bloco_inicio_index=bloco_inicial-1)
+
+# -------------------------
 # Funções utilitárias de horário
 # -------------------------
 def formatar_hora_log(h: str):
-    """Formato amigável para logs/prints: 'HHMM' -> 'HH:MM' """
+    """Formato para logs/prints: 'HHMM' -> 'HH:MM' """
     h = (h or "").strip()
     if len(h) == 4 and h.isdigit():
         return f"{h[:2]}:{h[2:]}"
@@ -144,7 +188,7 @@ def formatar_hora_log(h: str):
     return h
 
 def formatar_hora_dig(h: str):
-    """Formato para digitação (mantém '000' -> '000', '044' -> '0044' logic handled elsewhere)."""
+    """Formato para digitação (mantém '000' -> '000', '044' -> '0044')."""
     h = (h or "").strip()
     if len(h) == 3 and h.isdigit():
         return f"0{h}"
@@ -153,10 +197,10 @@ def formatar_hora_dig(h: str):
 # -------------------------
 # Preenchimento de uma faixa
 # -------------------------
-def preencher_faixa(row, linha_label, faixaAnterior=None):
+def preencher_faixa(row, linha_label, faixaFimAnterior=None):
     """
     Executa os comandos de pyautogui para preencher uma faixa com base em 'row' (dict).
-    Recebe faixaAnterior (strings (FaixaInicio) para detectar virada de dia.
+    Recebe faixaFimAnterior (strings (FaixaInicio) para detectar virada de dia.
     Observação: não faz waits por F10 aqui — apenas executa o preenchimento da faixa.
     """
 
@@ -193,12 +237,12 @@ def preencher_faixa(row, linha_label, faixaAnterior=None):
     # variável para evitar dupla verificação de faixa para o dia seguinte
     faixaIniVerif = False
 
-    # Detecta virada de dia: se faixaAnterior existe e hora atual < anterior (0000 case)
-    if faixaAnterior:
-        prev_ini = (faixaAnterior[0] or "").strip()
+    # Detecta virada de dia: se faixaFimAnterior existe e hora atual < anterior (0000 case)
+    if faixaFimAnterior:
+        prev_ini = (faixaFimAnterior[0] or "").strip()
         if prev_ini.isdigit() and faixaIni_raw.isdigit():
             if int(faixaIni_raw) < int(prev_ini):
-                registrar_log(f"[{linha_label}] virada detectada em FaixaInicio ({faixaIni_raw} < {prev_ini}) — confirmando Enter")
+                registrar_log(f"[{linha_label}] virada detectada em Faixa Inicio ({faixaIni_raw} < {prev_ini}) — confirmando Enter")
                 time.sleep(0.25)
                 pyautogui.press("tab")
                 pyautogui.press("enter")
@@ -213,11 +257,11 @@ def preencher_faixa(row, linha_label, faixaAnterior=None):
     registrar_log(f"[{linha_label}] tab → campo Intervalo")
 
     # Detecta virada de dia no FaixaFinal em relação ao anterior
-    if faixaAnterior and not faixaIniVerif:
-        prev_fim = faixaIni_raw
-        if prev_fim.isdigit() and faixaFim_raw.isdigit():
-            if int(faixaFim_raw) < int(prev_fim):
-                registrar_log(f"[{linha_label}] virada detectada em FaixaFinal ({faixaFim_raw} < {prev_fim}) — confirmando Enter")
+    if faixaFimAnterior and not faixaIniVerif:
+        prev_fim = faixaIni_dig
+        if prev_fim.isdigit() and faixaFim_dig.isdigit():
+            if int(faixaFim_dig) < int(prev_fim):
+                registrar_log(f"[{linha_label}] virada detectada em FaixaFinal ({faixaFim_dig} < {prev_fim}) — confirmando Enter")
                 time.sleep(0.25)
                 pyautogui.press("tab")
                 pyautogui.press("enter")
@@ -257,39 +301,43 @@ def preencher_faixa(row, linha_label, faixaAnterior=None):
 
     # final do preenchimento da faixa
     registrar_log(f"[{linha_label}] faixa preenchida ({faixaIni_log} → {faixaFim_log})")
-    print_user(f"{linha_label} • Faixa preenchida | F10 para continuar (F9 para parar)")
+    print_user(f"{linha_label} • Faixa preenchida | F10 para continuar | F9 para repetir | F12 para parar ")
 
 # -------------------------
-# Preenchimento de blocos (controle de interação F10/F9)
+# Preenchimento de blocos (controle de interação F10/F12)
 # -------------------------
 def preencher_blocos(linhas, blocos, bloco_inicio_index):
     """
     Percorre blocos a partir de bloco_inicio_index (0-based index na lista 'blocos').
     Para cada faixa dentro do bloco chama preencher_faixa().
-    Aguarda F10 entre faixas; F9 encerra tudo.
+    Aguarda F10 entre faixas; F12 encerra tudo.
     """
+
     global parar_execucao
 
     total_blocos = len(blocos)
     # itera blocos a partir da escolha do usuário
-    for idx_bloco, bloco in enumerate(blocos[bloco_inicio_index:], start=bloco_inicio_index + 1):
+    for idx_bloco, bloco in enumerate(blocos[bloco_inicio_index:], start=bloco_inicio_index): # Mantive 'start' ajustado
         id_bloco = bloco["id_bloco"]
         inicio = bloco["inicio"]
         fim = bloco["fim"]
         count = bloco["count"]
 
-            #print_user(f" >>> Iniciando bloco {id_bloco} ({count} faixas horárias)")
         registrar_log(f"INICIO_BLOCO {id_bloco} linhas {inicio+1}-{fim+1}")
 
         print(tabulate([[id_bloco]],
-               headers=["Bloco"],
-               tablefmt="rounded_grid"))
+                       headers=["Bloco"],
+                       tablefmt="rounded_grid"))
 
         # itera dentro do bloco: trecho de linhas
         trecho = linhas[inicio:fim+1]
-        faixaAnterior = None  # para detectar virada comparando com a faixa anterior dentro do bloco
+        faixaFimAnterior = None  # para detectar virada comparando com a faixa anterior dentro do bloco
 
-        for offset, row in enumerate(trecho):
+        offset = 0 # Inicializa o índice relativo dentro do 'trecho'
+        while offset < count: # count é o len(trecho)
+
+            row = trecho[offset]
+            
             escutador_tecla()
             if parar_execucao:
                 registrar_log("Parada solicitada — encerrando preenchimento.")
@@ -310,17 +358,16 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
             print_user(f">>> Processando faixa {offset+1}/{count}")
 
             # chama a rotina que faz os pyautogui.write / press etc.
-            preencher_faixa(row, linha_label, faixaAnterior=faixaAnterior)
+            preencher_faixa(row, linha_label, faixaFimAnterior=faixaFimAnterior)
 
-            # atualiza faixaAnterior para a próxima iteração (usa raw values)
-            faixaAnterior = (row.get("FaixaFim", ""))
+            # atualiza faixaFimAnterior para a próxima iteração (usa raw values)
+            faixaFimAnterior = (row.get("FaixaFim", ""))
 
             # controle de avanço: se não é a última faixa do bloco, espera F10;
-            # se for a última, espera F10 para ir ao próximo bloco (ou F9)
-            is_last = (offset == len(trecho) - 1)
+            # se for a última, espera F10 para ir ao próximo bloco (ou F12)
+            is_last = (offset == count - 1)
             if not is_last:
-                #print_user(" >>> Aguardando F10 para próxima faixa (F9 para sair)")
-                registrar_log(f"AGUARDANDO_F10 faixa {offset+1} do bloco {id_bloco}")
+                registrar_log(f"AGUARDANDO_F10_F9_F12 faixa {offset+1} do bloco {id_bloco}")
                 # loop leve aguardando tecla
                 while True:
                     escutador_tecla()
@@ -329,18 +376,24 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
                         print_user(" >>> Execução encerrada pelo usuário.")
                         return
                     if keyboard.is_pressed("F10"):
-                        # debouncing
                         time.sleep(0.18)
                         registrar_log(f" >>> F10 pressionado — avançando para faixa {offset+2} do bloco {id_bloco}")
+                        offset += 1 
                         break
-                    time.sleep(0.06)
+                    if keyboard.is_pressed("F9"):
+                        time.sleep(0.18)
+                        registrar_log(f" >>> F9 pressionado — repetindo faixa {offset+1} do bloco {id_bloco}")
+                        break
+                    time.sleep(0.06)     
             else:
                 # último da lista do bloco
+                offset += 1
+
                 print("")
                 print_user(f" [+] Bloco {id_bloco} finalizado ({count} faixas horárias).  [+] ")
                 registrar_log(f"FIM_BLOCO {id_bloco}")
                 print("")
-
+                
                 # Verifica se há um próximo bloco
                 prox_idx = idx_bloco - bloco_inicio_index  # posição relativa no enumerate
                 if prox_idx < total_blocos - 1:
@@ -352,8 +405,8 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
                 else:
                     prox_id_bloco = None
                     print_user(">>> Este foi o último bloco.")
-                print_user(">>> Pressione F10 para iniciar o próximo bloco ou F9 para encerrar.")
-                # Espera F10 ou F9
+                print_user(">>> Pressione F10 para iniciar o próximo bloco | F9 para selecionar bloco | F12 para encerrar")
+                # Espera F10, F9 ou F12
                 while True:
                     escutador_tecla()
                     if parar_execucao:
@@ -367,19 +420,23 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
                         else:
                             registrar_log(" >>> F10 pressionado — não há próximo bloco (fim).")
                         break
+                    if keyboard.is_pressed("F9"):
+                        time.sleep(0.18)
+                        registrar_log(f" >>> F9 pressionado iniciando seletor de blocos")
+                        seletorBlocos(linhas, blocos)
+                        break
                     time.sleep(0.06)
-
-
+        
         # fim do bloco — segue para próximo bloco no for
         # pequeno delay entre blocos
         time.sleep(0.15)
-
+        
     # todos blocos processados
-    print_user("🟢 Todos os blocos processados.")
+    print_user("Todos os blocos processados.")
     registrar_log("PROCESSAMENTO_COMPLETO")
 
 # -------------------------
-# Interface principal (CLI)
+# Interface principal
 # -------------------------
 def main():
     global parar_execucao
@@ -390,7 +447,7 @@ def main():
     print("Bem Vindo(a)")
     print("Insira o nome do arquivo para iniciar, ENTER para confirmar o nome.")
     
-    # escolha do CSV
+    # Escolha do CSV
     print("")
     caminho_csv = input("Nome do CSV (sem .csv): ").strip() + ".csv"
     print_user(f"Arquivo selecionado: {caminho_csv}")
@@ -402,7 +459,8 @@ def main():
     # valida campos mínimos (esperados)
     chavesObrigatorias = {"FaixaInicio", "FaixaFinal", "Intervalo", "Percurso", "TempTerm", "Frota", "Linha", "Dia", "Sentido"} # "Tipo", "NovaOso"
     chavesCabecalho = set(k for k in (cabecalho or []))
-    # make chavesCabecalho normalized (strip)
+    
+    # Normaliza chavesCabecalho
     chavesCabecalho = set(h.strip() for h in (cabecalho or []))
     chaveFaltando = chavesObrigatorias - chavesCabecalho
     if chaveFaltando:
@@ -414,59 +472,59 @@ def main():
     if not blocos:
         print_user("Nenhum bloco identificado no CSV.")
         return
-
-    # exibe blocos (resumido)
-    print("")
-    print("Blocos detectados:")
-    headers = ["N:", "ID Bloco", "Qtd. Faixas Horárias"]
-    tabela = [
-        [i + 1, b["id_bloco"], b["count"]]
-        for i, b in enumerate(blocos)
-    ]
-    print(tabulate(tabela, headers=headers, tablefmt="rounded_grid"))
-    #for idx, b in enumerate(blocos, start=1):
-    #    print(f"[{idx}] {b['id_bloco']} → linhas ({b['count']} faixas horárias)")
-    print("")
-
-    # escolhe bloco inicial
-    bloco_inicial = 1
-    escolha = input(f"Digite o número do bloco para começar (1–{len(blocos)}) ou ENTER para o 1º: ").strip()
-    if escolha:
-        try:
-            n = int(escolha)
-            if 1 <= n <= len(blocos):
-                bloco_inicial = n
-            else:
-                print_user("Entrada inválida — iniciando do primeiro bloco.")
-        except:
-            print_user("Entrada inválida — iniciando do primeiro bloco.")
     
     # Instruções antes de iniciar o programa
     print("REQUISITOS E INSTRUÇÕES:")
     print('''
     Antes de iniciar preencha os seguintes requitos:
-          [] Abra o SIGET
-          [] Abra a aba "Parâmetros de linha"
-          [] Insira a OSO da linha a ser preenchida
-             se atentando ao SENTIDO
-          [] Limpe todas as faixas horárias do DIA e SENTIDO
-             que será preenchio
-          [] Posicione o cursor na primeira CÉLULA da 1ª linha de preenchimento
+        [$] Prepare o CSV conforme instruções na documentação
+        [$] Abra o SIGET
+        [$] Abra a aba "Parâmetros de linha"
+        [$] Insira a OSO da linha a ser preenchida
+            se atentando ao SENTIDO
+        [$] Limpe TODAS as faixas horárias do DIA e SENTIDO
+            que será preenchio
+        [$] Posicione o cursor na primeira CÉLULA da 1ª linha de preenchimento
 
     ''')
 
-    print("Pressione ENTER para continuar...")
-    keyboard.wait("enter")
+    print("Pressione F10 para continuar...")
+    keyboard.wait("F10")
 
-    # confirma e inicia processamento
-    print_user(f"Iniciando a partir do bloco {bloco_inicial}: {blocos[bloco_inicial-1]['id_bloco']}")
-    registrar_log(f"USUARIO iniciou processamento a partir do bloco {bloco_inicial}")
+    print('''
+    INSTRUÇÕES E AVISOS:
+        [#] Este prgrama apenas automatiza a digitação dos
+            horários
+        [#] Quaisquer erros e avisos que apareça continua
+            as soluções que já são utiluzadas normalmente
+        [#] SEMPRE deve se colocar o cursor no inico da
+            FAIXA INICIAL de cada faixa horária que será
+            preenchida
+    ''')
 
-    # chama rotina de preenchimento
-    preencher_blocos(linhas, blocos, bloco_inicio_index=bloco_inicial-1)
+    print("Pressione F10 para continuar...")
+    keyboard.wait("F10")
+
+    #Seleciona os blocos
+    seletorBlocos(linhas, blocos)
 
 # -------------------------
 # Roda o main
 # -------------------------
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
+
+# ===================
+#  Autor: Eude Leal
+#  Github: eudeleal
+# ===================
+
+# Brasil
+# Salvador, BA - 20255

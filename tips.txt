@@ -1,16 +1,19 @@
-"Emgessar" mais o cod. | +free ram
+$$ Dica DEV | >> Reporte USUÁRIOS | ## Anotações 
 
-Sempre apontar para os cabeçalho do CSV
+EM PROGRESSO(){
+    $$ "Emgessar" mais o código | +free ram
+    ## Pegar tbm as viagens a nível de mostrar
+    ## NÃO COLOCAR ENTER PARA NAD
+    ## VERIFICAR NA PASTA "FQHs" OS DOCS GERADOS ANTES DE INICIAR A PRÓXIMA LINHA
+}
 
-Usar um ID no CSV para "varrer" (for) procurando a chave primária do "bloco" da linha+dia (ex. 1001SAB, 1001DOM...)
-Mapeamento de dados no Py [maping]
-
-Linha 338, 357 - Remove try, tratar as excções
-
-Pegar tbm as viagens a nível de mostrar
-
-AVISAR QUE O SISTEMA NÃO RECONHECE ERROS NEM NADA QUE O SIGET APRESETE, APENAS SUBTITUE A DIGITAÇÃO
-    NÃO COLOCAR ENTER PARA NADA
-INDICAR QUE O USUÁRIO DEVE APERTAR ENTER PARA CONFIRMAR O CSV
-INDICAR QUE SEMPRE É PRECISO COLOCAR O CURSOR NO INICIO
->> DAR A OPÇÃO DE COMEÇAR DO INICIO O BLOCO OU REPETIR A MESMA DIGITAÇÃO DA LINHA
+CONCLUÍDOS(){
+    $ Sempre apontar para os cabeçalho do CSV
+    $ Usar um ID no CSV para "varrer" (for) procurando a chave primária do "bloco" da linha+dia (ex. 1001SAB, 1001DOM...)
+    $ Mapeamento de dados no Py [maping]
+    $ Linha 338, 357 - Remove try, tratar as excções
+    >> DAR A OPÇÃO DE COMEÇAR DO INICIO O BLOCO OU REPETIR A MESMA DIGITAÇÃO DA LINHA
+    >> INDICAR QUE O USUÁRIO DEVE APERTAR ENTER PARA CONFIRMAR O CSV
+    >> INDICAR QUE SEMPRE É PRECISO COLOCAR O CURSOR NO INICIO
+    >> AVISAR QUE O SISTEMA NÃO RECONHECE ERROS NEM NADA QUE O SIGET APRESETE, APENAS SUBTITUE A DIGITAÇÃO
+}

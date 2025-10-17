@@ -19,16 +19,15 @@ LOGs/
 *.xlsx
 *.bak
 *.tmp
+iconAutomaSIGET.ico
 
 # --- BUILD E DISTRIBUIÇÃO ---
 build/
-#dist/
 *.egg-info/
 *.egg
 *.spec
 
 # --- FERRAMENTAS E CONFIGURAÇÕES LOCAIS ---
-# IDEs
 .vscode/
 .idea/
 *.sublime-project
@@ -46,10 +45,10 @@ Desktop.ini
 *.swp
 *.swo
 
-# =======================================
-# Autor: Eude Leal
-# Github: eudeleal
-# =======================================
+# ===================
+#  Autor: Eude Leal
+#  Github: eudeleal
+# ===================
 
 # Brasil
 # Salvador, BA - 2025
