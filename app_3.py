@@ -1,3 +1,4 @@
+
 #Bibliotecas nativas
 import csv
 import os
@@ -43,7 +44,14 @@ def escutador_tecla():
     global parar_execucao
     if keyboard.is_pressed("F12"):
         parar_execucao = True
-        print_user("Tecla F12 detectada — encerrando execução...")
+        print_user("Tecla F12 detectada — encerrando execução.")
+        print_user("Retornando ao menu.")
+        print("")
+        print("")
+        print("")
+        time.sleep(5)
+        parar_execucao = False
+        main()
 
 # -------------------------
 # Leitura do CSV (DictReader) + normalização das chaves
@@ -129,13 +137,13 @@ def gerar_blocos(linhas):
 def seletorBlocos(linhas, blocos):
     # exibe blocos (resumido)
     print("")
-    print("Blocos detectados:")
+    print("  Blocos detectados:")
     headers = ["N:", "ID Bloco", "Qtd. Faixas Horárias"]
     tabela = [
         [i + 1, b["id_bloco"], b["count"]]
         for i, b in enumerate(blocos)
     ]
-    print(tabulate(tabela, headers=headers, tablefmt="rounded_grid"))
+    print("  " + tabulate(tabela, headers=headers, tablefmt="rounded_grid"))
     #for idx, b in enumerate(blocos, start=1):
     #    print(f"[{idx}] {b['id_bloco']} → linhas ({b['count']} faixas horárias)")
     print("")
@@ -145,13 +153,15 @@ def seletorBlocos(linhas, blocos):
     bloco_inicial = 1
     deNovo = True
     while deNovo:
-        escolha = input(f"Digite o número do bloco para começar (1-{len(blocos)}): ").strip()
+        escolha = input(f"Digite o número do bloco para começar (1-{len(blocos)}) | [0] Para voltar ao menu inicial: ").strip()
         time.sleep(0.5)
         if escolha and escolha.isdigit():
             n = int(escolha)
             if 1 <= n <= len(blocos):
                 bloco_inicial = n
                 deNovo = False
+            elif n == 0:
+                main()
             else:
                 print_user("Entrada inválida")
                 print("")
@@ -359,26 +369,29 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
             # controle de avanço: se não é a última faixa do bloco, espera F10;
             # se for a última, espera F10 para ir ao próximo bloco (ou F12)
             is_last = (offset == count - 1)
-            if not is_last:
-                registrar_log(f"AGUARDANDO_F10_F9_F12 faixa {offset+1} do bloco {id_bloco}")
-                # loop leve aguardando tecla
-                while True:
-                    escutador_tecla()
-                    if parar_execucao:
-                        registrar_log("Parada solicitada durante espera de F10.")
-                        print_user(" >>> Execução encerrada pelo usuário.")
-                        return
-                    if keyboard.is_pressed("F10"):
-                        time.sleep(0.18)
-                        registrar_log(f" >>> F10 pressionado — avançando para faixa {offset+2} do bloco {id_bloco}")
-                        offset += 1 
-                        break
-                    if keyboard.is_pressed("F9"):
-                        time.sleep(0.18)
-                        registrar_log(f" >>> F9 pressionado — repetindo faixa {offset+1} do bloco {id_bloco}")
-                        break
-                    time.sleep(0.06)     
-            else:
+            
+            registrar_log(f"AGUARDANDO_F10_F9_F12 faixa {offset+1} do bloco {id_bloco}")
+            
+            # loop leve aguardando tecla
+            while True:
+                escutador_tecla()
+                if parar_execucao:
+                    registrar_log("Parada solicitada durante espera de F10.")
+                    print_user(" >>> Execução encerrada pelo usuário.")
+                    return
+                if keyboard.is_pressed("F10"):
+                    time.sleep(0.18)
+                    registrar_log(f" >>> F10 pressionado — avançando para faixa {offset+2} do bloco {id_bloco}")
+                    offset += 1 
+                    break
+                if keyboard.is_pressed("F9"):
+                    time.sleep(0.18)
+                    registrar_log(f" >>> F9 pressionado — repetindo faixa {offset+1} do bloco {id_bloco}")
+                    is_last = False
+                    break
+                time.sleep(0.06)
+
+            if is_last:
                 # último da lista do bloco
                 offset += 1
 
@@ -390,7 +403,7 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
                 # Verifica se há um próximo bloco
                 prox_idx = idx_bloco - bloco_inicio_index  # posição relativa no enumerate
                 if prox_idx < total_blocos - 1:
-                    prox_id_bloco = blocos[bloco_inicio_index + prox_idx]["id_bloco"]
+                    prox_id_bloco = blocos[bloco_inicio_index + prox_idx + 1]["id_bloco"]
                     registrar_log(f">>> Próximo bloco: {prox_id_bloco}")
                     print(tabulate([[prox_id_bloco, len(prox_id_bloco)]],
                headers=["Prox. Bloco", "Qtd Faixas"],
@@ -427,6 +440,7 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
     # todos blocos processados
     print_user("Todos os blocos processados.")
     registrar_log("PROCESSAMENTO_COMPLETO")
+    main()
 
 # -------------------------
 # Interface principal
@@ -486,8 +500,8 @@ def main():
 
     print('''
     INSTRUÇÕES E AVISOS:
-        [#] Este prgrama apenas automatiza a digitação dos
-            horários
+        [#] Este prgrama apenas automatiza a digitação das
+          faixas horárias (programação da faixa)
         [#] Quaisquer erros e avisos que apareça continua
             as soluções que já são utiluzadas normalmente
         [#] SEMPRE deve se colocar o cursor no inico da

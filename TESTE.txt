@@ -1,0 +1,11 @@
+ > Upgrade:
+Função de interrupção do programa chama o Menu
+Fim do preenchimento dos blocos chama o Menu
+Instruções do programa
+
+ > Add:
+Opção de voltar ao Menu a partir da seleção de blocos
+
+ > Fix:
+Pode repetir a ultima faixa.
+Exibição do próximo bloco
