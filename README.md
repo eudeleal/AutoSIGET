@@ -27,7 +27,8 @@ Clone este repositório e instale as dependências:
 git clone https://github.com/eudeleal/automa-siget3000.git
 cd automa-siget3000
 pip install pyautogui keyboard tabulate
-⚠️ Requisitos:
+
+## ⚠️ Requisitos:
 
 Python 3.8+
 
@@ -35,19 +36,20 @@ Permissões de automação ativas (no Windows, execute como administrador).
 
 SIGET aberto e com a aba “Parâmetros de linha” pronta.
 
-🧾 Estrutura do CSV
+## 🧾 Estrutura do CSV
 O arquivo .csv deve conter ponto e vírgula (;) como separador e possuir as colunas obrigatórias:
 
 Copiar código
 FaixaInicio; FaixaFinal; Intervalo; Percurso; TempTerm; Frota;
 Linha; Dia; Sentido; Oso; LinhaOso
-🧩 Exemplo:
-yaml
+
+## 🧩 Exemplo:
 Copiar código
 FaixaInicio;FaixaFinal;Intervalo;Percurso;TempTerm;Frota;Linha;Dia;Sentido;Oso;LinhaOso
 0440;0440;0;162;5;1;1001;Sab;0;4767-00;1001
 0515;0530;15;170;5;3;1001;Sab;0;4767-01;100101
-▶️ Como usar
+
+## ▶️ Como usar
 Prepare o ambiente:
 
 Deixe o SIGET aberto.
@@ -69,7 +71,7 @@ Informe o nome do arquivo CSV (sem a extensão).
 
 Siga as instruções exibidas no terminal e use as teclas de controle (F10 / F9 / F12) conforme indicado.
 
-🗂️ Estrutura de pastas
+## 🗂️ Estrutura de pastas
 bash
 Copiar código
 automa-siget3000/
@@ -77,11 +79,12 @@ automa-siget3000/
 │   └── log_YYYY.MM.DD_HH.MM.SS.txt   # Arquivos de log automáticos
 ├── automa_siget3000.py               # Script principal
 └── exemplo.csv                       # Exemplo de entrada
-🧑‍💻 Autor
+
+## 🧑‍💻 Autor
 Eude Leal
 📍 Salvador – BA, Brasil
 🔗 github.com/eudeleal
 
-📜 Licença
+## 📜 Licença
 Este projeto é de uso interno e educativo.
 Sinta-se livre para adaptar e aprimorar, mantendo os créditos originais.
