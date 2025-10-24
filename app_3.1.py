@@ -15,7 +15,7 @@ from tabulate import tabulate
 # Configurações / Globals
 # -------------------------
 parar_execucao = False
-LOG_DIR = "LOGs"
+LOG_DIR = "AutoSiget3000/LOGs"
 os.makedirs(LOG_DIR, exist_ok=True)
 nome_arquivo_log = os.path.join(LOG_DIR, f"log_{datetime.now().strftime('%Y.%m.%d_%H.%M.%S')}.txt")
 
@@ -57,6 +57,8 @@ def escutador_tecla():
 # Leitura do CSV (DictReader) + normalização das chaves
 # -------------------------
 def pedirCSV():
+    '''Função auxiliar para solicitar o nome do arquivo .csv ao usuário'''
+    
     print("")
     print("Insira o nome do arquivo para iniciar, ENTER para confirmar o nome.")
     
@@ -147,6 +149,7 @@ def gerar_blocos(linhas):
 # Seleção dos blocos
 # -------------------------
 def seletorBlocos(linhas, blocos):
+    '''Escolha do bloco_inicial_index pelo usuário, definido o bloco de partida para execução dos preenchimentos'''
     # exibe blocos (resumido)
     print("")
     print("  Blocos detectados:")
@@ -188,7 +191,7 @@ def seletorBlocos(linhas, blocos):
     registrar_log(f"USUARIO iniciou processamento a partir do bloco {bloco_inicial}")
 
     # chama rotina de preenchimento
-    preencher_blocos(linhas, blocos, bloco_inicio_index=bloco_inicial-1)
+    preencher_blocos(linhas, blocos, oso_inicial_index=bloco_inicial-1)
 
 # -------------------------
 # Funções utilitárias de horário
@@ -458,6 +461,7 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
 # Interface principal
 # -------------------------
 def main():
+    '''Módulo central do programa, menu inicial'''
     dados, cabecalho = pedirCSV()
     if dados is None:
         return
@@ -506,7 +510,7 @@ def main():
 
 def IniciarModulo_ImprimirPDFs(dados):
     
-    LOG_DIR = "FQHs"
+    LOG_DIR = "AutoSiget3000/FQHs"
     os.makedirs(LOG_DIR, exist_ok=True)
 
     # Tratar osos e adicionar dados calculados
@@ -557,6 +561,7 @@ def IniciarModulo_ImprimirPDFs(dados):
     preencher_PDFs(OSOs) 
 
 def IniciarModulo_ProgramacaoLinha(dados):
+    '''Inicia o processamento do Módulo de programação de linha'''
     # gera blocos
     blocos = gerar_blocos(dados)
     if not blocos:
@@ -599,6 +604,7 @@ def IniciarModulo_ProgramacaoLinha(dados):
     seletorBlocos(dados, blocos)
 
 def intro():
+    '''Mensagem de introdução ao sistema'''
     global parar_execucao
 
     print("=" * 60)
@@ -621,10 +627,11 @@ if __name__ == "__main__":
 # -------------------------
 def tratarOSOs(osoBruta):
     """
-
-    EXPLICAÇÃO
-
+    Verifica a formatação das OSOs [123456], 
+    identifica se é Base ou Derivada e 
+    relaciona com a respectiva Linha 
     """
+
     osos = []
 
     for row in enumerate(osoBruta):
@@ -725,33 +732,43 @@ def imprimirPDF(row, oso_label):
     print_user(f"{oso_label} • OSO lançada | F10 para continuar | F9 para repetir | F12 para parar ")
 
 # -------------------------
+# Selecionar OSO a ser preenchida
+# -------------------------
+def seletorOsos(linhaOso, osos):
+    
+    # Escolha  a OSO
+    
+    oso_inicial_index = 0
+    preencher_PDFs(linhaOso, osos, oso_inicial_index)
+
+# -------------------------
 # Impressão de OSOs (controle de interação F10/F12)
 # -------------------------
 def preencher_PDFs(linhaOso, osos, oso_inicial_index):
     """
-    Percorre blocos a partir de bloco_inicio_index (0-based index na lista 'blocos').
+    Percorre osos a partir de oso_inicial_index (0-based index na lista 'osos').
     Para cada faixa dentro do bloco chama preencher_faixa().
     Aguarda F10 entre faixas; F12 encerra tudo.
     """
 
     global parar_execucao
 
-    total_blocos = len(blocos)
-    # itera blocos a partir da escolha do usuário
-    for idx_bloco, bloco in enumerate(blocos[bloco_inicio_index:], start=bloco_inicio_index): # Mantive 'start' ajustado
+    total_osos = len(osos)
+    # itera osos a partir da escolha do usuário
+    for idx_bloco, bloco in enumerate(osos[oso_inicial_index:], start=oso_inicial_index): # Mantive 'start' ajustado
         id_bloco = bloco["id_bloco"]
         inicio = bloco["inicio"]
         fim = bloco["fim"]
         count = bloco["count"]
 
-        registrar_log(f"INICIO_BLOCO {id_bloco} linhas {inicio+1}-{fim+1}")
+        registrar_log(f"INICIO_BLOCO {id_bloco} linhaOso {inicio+1}-{fim+1}")
 
         print(tabulate([[id_bloco]],
                        headers=["Bloco"],
                        tablefmt="rounded_grid"))
 
         # itera dentro do bloco: trecho de linhas
-        trecho = linhas[inicio:fim+1]
+        trecho = linhaOso[inicio:fim+1]
         faixaFimAnterior = None  # para detectar virada comparando com a faixa anterior dentro do bloco
 
         offset = 0 # Inicializa o índice relativo dentro do 'trecho'
@@ -819,9 +836,9 @@ def preencher_PDFs(linhaOso, osos, oso_inicial_index):
                 print("")
                 
                 # Verifica se há um próximo bloco
-                prox_idx = idx_bloco - bloco_inicio_index  # posição relativa no enumerate
-                if prox_idx < total_blocos - 1:
-                    prox_id_bloco = blocos[bloco_inicio_index + prox_idx + 1]["id_bloco"]
+                prox_idx = idx_bloco - oso_inicial_index  # posição relativa no enumerate
+                if prox_idx < total_osos - 1:
+                    prox_id_bloco = osos[oso_inicial_index + prox_idx + 1]["id_bloco"]
                     registrar_log(f">>> Próximo bloco: {prox_id_bloco}")
                     print(tabulate([[prox_id_bloco, len(prox_id_bloco)]],
                headers=["Prox. Bloco", "Qtd Faixas"],
@@ -846,17 +863,17 @@ def preencher_PDFs(linhaOso, osos, oso_inicial_index):
                         break
                     if keyboard.is_pressed("F9"):
                         time.sleep(0.18)
-                        registrar_log(f" >>> F9 pressionado iniciando seletor de blocos")
-                        seletorBlocos(linhas, blocos)
+                        registrar_log(f" >>> F9 pressionado iniciando seletor de osos")
+                        seletorOsos(linhaOso, osos)
                         break
                     time.sleep(0.06)
         
         # fim do bloco — segue para próximo bloco no for
-        # pequeno delay entre blocos
+        # pequeno delay entre osos
         time.sleep(0.15)
         
-    # todos blocos processados
-    print_user("Todos os blocos processados.")
+    # todos osos processados
+    print_user("Todos os osos processados.")
     registrar_log("PROCESSAMENTO_COMPLETO")
     main()
 

@@ -11,15 +11,16 @@ __pycache__/
 *$py.class
 
 # --- LOGS E SAÍDAS ---
-LOGs/
-*.log
+AutoSiget3000/
 
 # --- DADOS TEMPORÁRIOS OU PRIVADOS ---
 *.json
 *.xlsx
 *.bak
 *.tmp
-iconAutomaSIGET.ico
+*.ico
+*.txt
+*.ipynb
 
 # --- BUILD E DISTRIBUIÇÃO ---
 build/
