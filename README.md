@@ -28,6 +28,8 @@ git clone https://github.com/eudeleal/automa-siget3000.git
 cd automa-siget3000
 pip install pyautogui keyboard tabulate
 
+---
+
 ## ⚠️ Requisitos:
 
 Python 3.8+
@@ -36,40 +38,39 @@ Permissões de automação ativas (no Windows, execute como administrador).
 
 SIGET aberto e com a aba “Parâmetros de linha” pronta.
 
+---
+
 ## 🧾 Estrutura do CSV
 O arquivo .csv deve conter ponto e vírgula (;) como separador e possuir as colunas obrigatórias:
 
-Copiar código
-FaixaInicio; FaixaFinal; Intervalo; Percurso; TempTerm; Frota;
-Linha; Dia; Sentido; Oso; LinhaOso
+FaixaInicio; FaixaFinal; Intervalo; Percurso; TempTerm; Frota; Linha; Dia; Sentido; Oso; LinhaOso
+
+---
 
 ## 🧩 Exemplo:
 Copiar código
-FaixaInicio;FaixaFinal;Intervalo;Percurso;TempTerm;Frota;Linha;Dia;Sentido;Oso;LinhaOso
-0440;0440;0;162;5;1;1001;Sab;0;4767-00;1001
-0515;0530;15;170;5;3;1001;Sab;0;4767-01;100101
+FaixaInicio | FaixaFinal | Intervalo | Percurso | TempTerm | Frota| Linha| Dia| Sentido| Oso    | LinhaOso
+0440        | 0440       | 0         | 162      | 5        | 1    | 1001 | Sab| 0      | 476700 | 1001
+0515        | 0530       | 15        | 170      | 5        | 3    | 1001 | Sab| 0      | 476701 | 100101
+
+---
 
 ## ▶️ Como usar
 Prepare o ambiente:
 
 Deixe o SIGET aberto.
-
 Vá até a aba “Parâmetros de linha”.
-
 Insira a OSO da linha correta.
-
 Apague as faixas existentes do Dia/Sentido a ser preenchido.
-
 Posicione o cursor na primeira célula vazia da grade.
-
 Execute o programa:
 
-bash
-Copiar código
 python automa_siget3000.py
 Informe o nome do arquivo CSV (sem a extensão).
 
 Siga as instruções exibidas no terminal e use as teclas de controle (F10 / F9 / F12) conforme indicado.
+
+---
 
 ## 🗂️ Estrutura de pastas
 bash
@@ -80,10 +81,14 @@ automa-siget3000/
 ├── automa_siget3000.py               # Script principal
 └── exemplo.csv                       # Exemplo de entrada
 
+---
+
 ## 🧑‍💻 Autor
 Eude Leal
 📍 Salvador – BA, Brasil
 🔗 github.com/eudeleal
+
+---
 
 ## 📜 Licença
 Este projeto é de uso interno e educativo.
