@@ -23,7 +23,6 @@ Este script lê as programações, organiza os blocos por linha/dia/sentido e ex
 
 Clone este repositório e instale as dependências:
 
-```bash
 git clone https://github.com/eudeleal/automa-siget3000.git
 cd automa-siget3000
 pip install pyautogui keyboard tabulate
@@ -72,21 +71,10 @@ Siga as instruções exibidas no terminal e use as teclas de controle (F10 / F9 
 
 ---
 
-## 🗂️ Estrutura de pastas
-bash
-Copiar código
-automa-siget3000/
-├── LOGs/
-│   └── log_YYYY.MM.DD_HH.MM.SS.txt   # Arquivos de log automáticos
-├── automa_siget3000.py               # Script principal
-└── exemplo.csv                       # Exemplo de entrada
-
----
-
 ## 🧑‍💻 Autor
-Eude Leal
-📍 Salvador – BA, Brasil
-🔗 github.com/eudeleal
+### Eude Leal
+### 📍 Salvador – BA, Brasil
+### 🔗 github.com/eudeleal
 
 ---
 
