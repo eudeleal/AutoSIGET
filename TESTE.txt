@@ -1,11 +1,26 @@
- > Upgrade:
-Função de interrupção do programa chama o Menu
-Fim do preenchimento dos blocos chama o Menu
-Instruções do programa
+Linha    Oso      Tipo  NomePdf
+####-00  ####-00  B     FH ####-## ####-##
+####-0#  ####-0#  D     QH ####-## ####-##
 
- > Add:
-Opção de voltar ao Menu a partir da seleção de blocos
+Tab     | Informe o N° da OSO -> Imprimir em
 
- > Fix:
-Pode repetir a ultima faixa.
-Exibição do próximo bloco
+if OsoAtiva:
+    # Aviso de OSO filha detectada
+    Tab     | SIM -> NÃO
+    Enter   | Confirma NÃO
+
+Tab     | Imprimir em -> Configurar
+Tab     | Configurar -> Imprimir
+Enter   | Confirma Imprimir
+
+DIGITA NomePdf
+
+Enter   | Confirma SALVAR
+
+if PdfExiste:
+    # PDF salvo com sucesso
+else:
+    # PDF não encontrado, verifique a pasta SALVAR
+
+    # Escolha repetir ou continuar
+
