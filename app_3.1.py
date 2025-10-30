@@ -367,9 +367,9 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
             # timer antes de iniciar na primeira vez
             if offset == 0:
                 print_user("")
-                print_user("  [+] Tempo de 5s para ajustar o cusor no SIGET [+] ")
+                print_user("  [+] Tempo de 3s para ajustar o cusor no SIGET [+] ")
                 print_user("")
-                time.sleep(5)
+                time.sleep(3)
 
             # imprime resumo ao usuário: ação principal
             print_user(f">>> Processando faixa {offset+1}/{count}")
@@ -585,11 +585,18 @@ def imprimirPDF(row, oso, OsoAtiva, OsoDerivada, fQH):
     # Início do preenchimento
     # --------------------------
 
+    print_user("  [+] Tempo de 3s para ajustar o cusor no SIGET [+] ")
+    time.sleep(3)
+
     # Preenche o campo Insira o Nº da OSO
     pyautogui.write(oso)
     registrar_log(f"[{oso_dig}] escreveu OSO '{oso}'")
     print_user(f"Preenchendo OSO:     {oso_dig}")
     time.sleep(0.3)
+
+    # Navega de N° da OSO → Imprimir em
+    pyautogui.press("tab")
+    registrar_log(f"[{oso_dig}] tab → Imprimir em")
 
     # Confirma se é OSO derivada (filha)
     if OsoAtiva and OsoDerivada:
@@ -597,25 +604,28 @@ def imprimirPDF(row, oso, OsoAtiva, OsoDerivada, fQH):
         print_user(aviso)
         registrar_log(f"[{oso_dig}] {aviso}")
 
-        # navega até o campo “SIM / NÃO” e escolhe “NÃO”
+        # Navega até o campo “SIM / NÃO” e escolhe “NÃO”
         pyautogui.press("right")  # muda SIM → NÃO
         registrar_log(f"[{oso_dig}] alterou opção para NÃO")
+        
         pyautogui.press("enter")
         registrar_log(f"[{oso_dig}] confirmou NÃO")
         time.sleep(0.4)
 
-    # avança até o botão “Configurar → Imprimir”
+    # Navega de Imprimir em → Configurar → Imprimir
     pyautogui.press("tab", presses=2, interval=0.2)
     registrar_log(f"[{oso_dig}] tab → botão Imprimir")
+    
     pyautogui.press("enter")
     registrar_log(f"[{oso_dig}] confirmou impressão")
+    time.sleep(2)
 
-    # digita o nome do PDF e confirma salvar
-    time.sleep(0.8)
+    # Digita o nome do PDF e confirma salvar
     pyautogui.write(NomePDF)
     registrar_log(f"[{oso_dig}] escreveu nome do PDF '{NomePDF}'")
     print_user(f"Preenchendo NomePDF: {NomePDF}")
     time.sleep(0.3)
+    
     pyautogui.press("enter")
     registrar_log(f"[{oso_dig}] confirmou salvar PDF")
     time.sleep(3.5)
@@ -631,15 +641,14 @@ def imprimirPDF(row, oso, OsoAtiva, OsoDerivada, fQH):
 
     if os.path.exists(caminho_pdf):
         registrar_log(f"[{oso_dig}] PDF salvo com sucesso: {NomePDF}.pdf")
-        print_user(f"{NomePDF}.pdf | Salvo com sucesso")
-        print("")
-        print_user(f"{oso_dig} • F10 para continuar | F9 para repetir | F12 para parar ")
+        print_user(f"   {NomePDF}.pdf | Salvo com sucesso")
+        print_user(f"[{oso_dig}] • F10 para continuar | F9 para repetir | F12 para parar ")
     else:
         registrar_log(f"[{oso_dig}] ERRO: PDF não encontrado ({NomePDF}.pdf)")
-        print_user(f"ERRO: {NomePDF}.pdf | PDF não encontrado")
-        print("")
-        print_user(f"{oso_dig} • F10 para continuar | F9 para repetir | F12 para parar ")
-        # aqui você pode aguardar input do usuário se quiser (ex: keyboard.wait)
+        print_user("===============================================")
+        print_user(f"   ERRO: {NomePDF}.pdf | PDF não encontrado   ")
+        print_user("===============================================")
+        print_user(f"[{oso_dig}] • F10 para continuar | F9 para repetir | F12 para parar ")
 
     # final do preenchimento da faixa
     
