@@ -17,7 +17,7 @@ from tabulate import tabulate
 parar_execucao = False
 LOG_DIR = "AutoSiget3000/LOGs"
 os.makedirs(LOG_DIR, exist_ok=True)
-nome_arquivo_log = os.path.join(LOG_DIR, f"log_{datetime.now().strftime('%Y.%m.%d_%H.%M.%S')}.txt")
+nome_arquivo_log = os.path.join(LOG_DIR, f"log_{datetime.now().strftime('%Y%m%d_%H.%M')}.txt")
 
 # -------------------------
 # Utilitários de Log
@@ -106,6 +106,7 @@ def gerar_blocos(linhas):
       { 'id_bloco': '1001_Sab_0', 'inicio': i0, 'fim': i1, 'count': n }
     Mantém ordem original do CSV.
     """
+
     blocos = []
     chave_anterior = None
     inicio = 0
@@ -159,8 +160,6 @@ def seletorBlocos(linhas, blocos):
         for i, b in enumerate(blocos)
     ]
     print("  " + tabulate(tabela, headers=headers, tablefmt="rounded_grid"))
-    #for idx, b in enumerate(blocos, start=1):
-    #    print(f"[{idx}] {b['id_bloco']} → linhas ({b['count']} faixas horárias)")
     print("")
     time.sleep(1)
 
@@ -191,7 +190,7 @@ def seletorBlocos(linhas, blocos):
     registrar_log(f"USUARIO iniciou processamento a partir do bloco {bloco_inicial}")
 
     # chama rotina de preenchimento
-    preencher_blocos(linhas, blocos, oso_inicial_index=bloco_inicial-1)
+    preencher_blocos(linhas, blocos, bloco_inicio_index=bloco_inicial-1)
 
 # -------------------------
 # Funções utilitárias de horário
@@ -417,12 +416,14 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
                 
                 # Verifica se há um próximo bloco
                 prox_idx = idx_bloco - bloco_inicio_index  # posição relativa no enumerate
-                if prox_idx < total_blocos - 1:
+                if prox_idx != 0:
+                    registrar_log(f">>> Ultimo bloco")
+                elif prox_idx < total_blocos - 1:
                     prox_id_bloco = blocos[bloco_inicio_index + prox_idx + 1]["id_bloco"]
                     registrar_log(f">>> Próximo bloco: {prox_id_bloco}")
-                    print(tabulate([[prox_id_bloco, len(prox_id_bloco)]],
-               headers=["Prox. Bloco", "Qtd Faixas"],
-               tablefmt="rounded_grid"))
+                    print(tabulate([[prox_id_bloco]],
+                        headers=["Prox. Bloco"],
+                        tablefmt="rounded_grid"))
                 else:
                     prox_id_bloco = None
                     print_user(">>> Este foi o último bloco.")
@@ -453,60 +454,323 @@ def preencher_blocos(linhas, blocos, bloco_inicio_index):
         time.sleep(0.15)
         
     # todos blocos processados
+    print("")
     print_user("Todos os blocos processados.")
+    print("")
+    print("")
+    print("Retornando ao MENU...")
     registrar_log("PROCESSAMENTO_COMPLETO")
     main()
 
-# -------------------------
-# Interface principal
-# -------------------------
-def main():
-    '''Módulo central do programa, menu inicial'''
-    dados, cabecalho = pedirCSV()
-    if dados is None:
-        return
+#=======================================#
 
-    # valida campos mínimos (esperados)
-    chavesObrigatorias = {"FaixaInicio", "FaixaFinal", "Intervalo", "Percurso", "TempTerm", "Frota", "Linha", "Dia", "Sentido", "Oso", "LinhaOso"}
-    chavesCabecalho = set(k for k in (cabecalho or []))
+# -------------------------
+# Normalização de OSOs
+# -------------------------
+def tratarOSOs(osoBruta):
+    """
+    Verifica a formatação das OSOs [123456], 
+    identifica se é Base ou Derivada e 
+    relaciona com a respectiva Linha 
+    """
+    QuantidadeDeOsos = 0
+    for i , row in enumerate(osoBruta):
+        oso = row.get("Oso", row.get("Oso ", "")).strip()
+        if oso != "":
+            QuantidadeDeOsos = QuantidadeDeOsos + 1
     
-    # Normaliza chavesCabecalho
-    chavesCabecalho = set(h.strip() for h in (cabecalho or []))
-    chaveFaltando = chavesObrigatorias - chavesCabecalho
-    if chaveFaltando:
-        print_user(f"Erro: o CSV está faltando colunas obrigatórias: {', '.join(chaveFaltando)}")
-        main()
-    
-    while True:
-        print('''
-        Selecione o módulo:
-            [1] - Digitar programação de linha
-            [2] - Imprimir PDF
+    osos = []
 
-            [0] - Voltar ao MENU
-        ''')
+    for i, row in enumerate(osoBruta[:QuantidadeDeOsos]):
+
+        linha = row.get("LinhaOso", row.get("LinhaOso ", "")).strip()
+        oso = row.get("Oso", row.get("Oso ", "")).strip()
         
-        # escolhe módulo
-        deNovo = True
-        while deNovo:
-            escolha = input("Digite o número do módulo: ").strip()
-            time.sleep(0.5)
-            if escolha and escolha.isdigit():
-                n = int(escolha)
-                if n == 1:
-                    IniciarModulo_ProgramacaoLinha(dados)
-                elif n == 2:
-                    IniciarModulo_ImprimirPDFs(dados)
-                elif n == 0:
-                    main()
-                else:
-                    print_user("Entrada inválida")
-                    print("")
-                    continue
+        linha_dig = row.get("LinhaOso", row.get("LinhaOso ", "")).strip()
+        oso_dig = row.get("Oso", row.get("Oso ", "")).strip()
+
+        if len(oso) == 6 and oso.isdigit():
+            fimOso = int(oso[4:])
+
+            if fimOso == 00:
+                oso_dig = oso[:4]
+                linha_dig = linha[:4]
+                osos.append({
+                    "n_oso": i + 1,
+                    "linha": linha_dig,
+                    "oso_dig": oso_dig,
+                    "oso": oso,
+                    "tipo": "BASE"
+                })
+            else:
+                oso_dig = oso[:4] + "-" + oso[4:]
+                linha_dig = linha[:4] + "-" + linha[4:]
+                osos.append({
+                    "n_oso": i + 1,
+                    "linha": linha_dig,
+                    "oso_dig": oso_dig,
+                    "oso": oso,
+                    "tipo": "DERIVADA"
+                })
+        else:
+            print_user(f"OSO [{oso}] | formato inválido seguir o formato: [123456]")
+            return
+            
+    filtoB = lambda x: x["tipo"] == "BASE"
+    filtoD = lambda x: x["tipo"] == "DERIVADA"
+    ososBase = list(filter(filtoB, osos))
+    ososDerivada = list(filter(filtoD, osos))
+
+    print("")
+    print_user(f"{len(osos)} Osos idenficadas | B:{len(ososBase)} D:{len(ososDerivada)} ")
+    print("")
+    time.sleep(1)  # import time
+    return osos
+
+# -------------------------
+# Selecionar OSO a ser preenchida
+# -------------------------
+def seletorOsos(OSOs):
+    
+    headers = ["Nº", "Linha", "OSO", "Tipo"]
+    tabela = [
+        [b["n_oso"],b["linha"], b["oso_dig"], b["tipo"]]
+        for i, b in enumerate(OSOs)
+    ]
+    print("")
+    print(tabulate(tabela, headers=headers, tablefmt="rounded_grid"))
+    print("")
+    time.sleep(1)
+       
+    # escolhe OSO inicial
+    oso_inicial = 1
+    deNovo = True
+    while deNovo:
+        escolha = input(f"Digite o número da OSO para começar (1-{len(OSOs)}) | [0] Para voltar ao menu inicial: ").strip()
+        time.sleep(0.5)
+        if escolha and escolha.isdigit():
+            n = int(escolha)
+            if 1 <= n <= len(OSOs):
+                oso_inicial = n
+                deNovo = False
+            elif n == 0:
+                main()
             else:
                 print_user("Entrada inválida")
                 print("")
                 continue
+        else:
+            print_user("Entrada inválida")
+            print("")
+            continue
+    print("")
+    preencher_PDFs(OSOs, oso_inicial_index=oso_inicial-1)
+
+# -------------------------
+# Impressão de um PDF
+# -------------------------
+def imprimirPDF(row, oso, OsoAtiva, OsoDerivada, fQH):
+    '''
+    Impressão de um PDF.
+    '''
+
+    # preserva strings originais
+    linha = row.get("linha", row.get("linha ", "")).strip()
+    oso = row.get("oso", row.get("oso ", "")).strip()
+    oso_dig = row.get("oso_dig", row.get("oso_dig ", "")).strip()
+    NomePDF = f"{fQH} {linha} {oso_dig}"
+
+
+    # --------------------------
+    # Início do preenchimento
+    # --------------------------
+
+    # Preenche o campo Insira o Nº da OSO
+    pyautogui.write(oso)
+    registrar_log(f"[{oso_dig}] escreveu OSO '{oso}'")
+    print_user(f"Preenchendo OSO:     {oso_dig}")
+    time.sleep(0.3)
+
+    # Confirma se é OSO derivada (filha)
+    if OsoAtiva and OsoDerivada:
+        aviso = f"Aviso: OSO filha detectada ({oso_dig})"
+        print_user(aviso)
+        registrar_log(f"[{oso_dig}] {aviso}")
+
+        # navega até o campo “SIM / NÃO” e escolhe “NÃO”
+        pyautogui.press("right")  # muda SIM → NÃO
+        registrar_log(f"[{oso_dig}] alterou opção para NÃO")
+        pyautogui.press("enter")
+        registrar_log(f"[{oso_dig}] confirmou NÃO")
+        time.sleep(0.4)
+
+    # avança até o botão “Configurar → Imprimir”
+    pyautogui.press("tab", presses=2, interval=0.2)
+    registrar_log(f"[{oso_dig}] tab → botão Imprimir")
+    pyautogui.press("enter")
+    registrar_log(f"[{oso_dig}] confirmou impressão")
+
+    # digita o nome do PDF e confirma salvar
+    time.sleep(0.8)
+    pyautogui.write(NomePDF)
+    registrar_log(f"[{oso_dig}] escreveu nome do PDF '{NomePDF}'")
+    print_user(f"Preenchendo NomePDF: {NomePDF}")
+    time.sleep(0.3)
+    pyautogui.press("enter")
+    registrar_log(f"[{oso_dig}] confirmou salvar PDF")
+    time.sleep(3.5)
+
+    # Verifica se o PDF foi salvo
+    caminho_pdf = os.path.join("AutoSiget3000", "FQHs", f"{NomePDF}.pdf")
+
+    '''
+    # Cria um PDF fake (arquivo vazio ou com texto de teste)
+    with open(caminho_pdf, "w") as f:
+        f.write(f"Arquivo fake para debug: {NomePDF}.pdf\n")
+    '''
+
+    if os.path.exists(caminho_pdf):
+        registrar_log(f"[{oso_dig}] PDF salvo com sucesso: {NomePDF}.pdf")
+        print_user(f"{NomePDF}.pdf | Salvo com sucesso")
+        print("")
+        print_user(f"{oso_dig} • F10 para continuar | F9 para repetir | F12 para parar ")
+    else:
+        registrar_log(f"[{oso_dig}] ERRO: PDF não encontrado ({NomePDF}.pdf)")
+        print_user(f"ERRO: {NomePDF}.pdf | PDF não encontrado")
+        print("")
+        print_user(f"{oso_dig} • F10 para continuar | F9 para repetir | F12 para parar ")
+        # aqui você pode aguardar input do usuário se quiser (ex: keyboard.wait)
+
+    # final do preenchimento da faixa
+    
+
+
+# -------------------------
+# Impressão de OSOs (controle de interação F10/F12)
+# -------------------------
+def preencher_PDFs(osos, oso_inicial_index):
+    """
+    Percorre osos a partir de oso_inicial_index (0-based index na lista 'osos').
+    Para cada faixa dentro do OSO chama preencher_faixa().
+    Aguarda F10 entre faixas; F12 encerra tudo.
+    """
+
+    global parar_execucao
+    fQH = ""
+
+    print('''
+        Selecione o tipo de impressão:
+            [1] - FH - Faixa Horária     [OSOS ATIVAS]
+            [2] - QH - Quadro Horário    [OSOS ATIVAS]
+            ===========================================
+            [3] - FH - Faixa Horária  [OSOS DESATIVAS]
+            [4] - QH - Quadro Horário [OSOS DESATIVAS]
+        ''')
+
+    # escolhe FH ou QH
+    deNovo = True
+    while deNovo:
+        escolha = input("Digite o número do tipo de impressão: ").strip()
+        time.sleep(0.5)
+        if escolha and escolha.isdigit():
+            n = int(escolha)
+            if n == 1:
+                fQH = "FH"
+                OsoAtiva = True
+                break
+            elif n == 2:
+                fQH = "QH"
+                OsoAtiva = True
+                break
+            elif n == 3:
+                fQH = "FH"
+                OsoAtiva = False
+                break
+            elif n == 4:
+                fQH = "QH"
+                OsoAtiva = False
+                break
+            else:
+                print_user("Entrada inválida")
+                print("")
+                continue
+        else:
+            print_user("Entrada inválida")
+            print("")
+            continue
+
+    # itera osos a partir da escolha do usuário
+    for idx_oso, OSO in enumerate(osos[oso_inicial_index:], start=oso_inicial_index):
+
+        oso = OSO["oso"]
+        oso_label = OSO["oso_dig"]  # label amigável para logs e prints
+        linha = OSO["linha"]
+
+        registrar_log(f"INICIO OSO: {oso} | Linha: {linha}")
+        
+        tabela = [[oso_label, linha]]
+        print(tabulate(tabela, headers=["OSO", "LINHA"],tablefmt="rounded_grid"))
+        print("")
+
+        RepetirOso = True
+        while RepetirOso:
+            
+            escutador_tecla()
+            if parar_execucao:
+                registrar_log("Parada solicitada — encerrando preenchimento.")
+                print_user("Execução encerrada pelo usuário.")
+                return
+
+            # imprime resumo ao usuário: ação principal
+            print_user(f">>> Processando OSO {oso_label}")
+
+            row = osos[idx_oso]
+
+            # Verifica se tem OSO devivada após a o OSO base atual 
+            OsoDerivada = False
+            prox_idx = idx_oso + 1
+            if prox_idx < len(osos):
+                prox_oso = osos[prox_idx]
+                if prox_oso["tipo"] == "DERIVADA":
+                    OsoDerivada = True
+
+            # chama a rotina que faz os pyautogui.write / press etc.
+            imprimirPDF(row, osos, OsoAtiva, OsoDerivada, fQH)
+            
+            registrar_log(f"AGUARDANDO_F10_F9_F12 OSO {oso_label}")
+            
+            # loop leve aguardando tecla
+            while True:
+                escutador_tecla()
+                if parar_execucao:
+                    registrar_log("Parada solicitada durante espera de F10.")
+                    print_user(" >>> Execução encerrada pelo usuário.")
+                    RepetirOso = False
+                    return
+                if keyboard.is_pressed("F10"):
+                    time.sleep(0.18)
+                    registrar_log(f" >>> F10 pressionado — preenchendo oso do OSO {oso}")
+                    RepetirOso = False
+                    break
+                if keyboard.is_pressed("F9"):
+                    time.sleep(0.18)
+                    registrar_log(f" >>> F9 pressionado — repetindo faixa do OSO {oso}")
+                    RepetirOso = True
+                    break
+                time.sleep(0.06)
+        # fim da OSO — segue para próxima OSO no for
+        # pequeno delay entre osos
+        time.sleep(0.15)
+        
+    # todos osos processados
+    print("")
+    print_user("Todos os osos processados.")
+    print("")
+    print("")
+    print("Retornando ao MENU...")
+    time.sleep(1)
+    registrar_log("PROCESSAMENTO_COMPLETO")
+    main()
 
 def IniciarModulo_ImprimirPDFs(dados):
     
@@ -515,10 +779,6 @@ def IniciarModulo_ImprimirPDFs(dados):
 
     # Tratar osos e adicionar dados calculados
     OSOs = tratarOSOs(dados)
-
-    print(OSOs)
-
-
 
     # Instruções antes de iniciar o programa
     print("REQUISITOS E INSTRUÇÕES:")
@@ -556,16 +816,18 @@ def IniciarModulo_ImprimirPDFs(dados):
 
     print("Pressione F10 para continuar...")
     keyboard.wait("F10")
+    print("")
 
     # Iniciar o preenchimento de PDFs
-    preencher_PDFs(OSOs) 
+    seletorOsos(OSOs) 
 
 def IniciarModulo_ProgramacaoLinha(dados):
     '''Inicia o processamento do Módulo de programação de linha'''
-    # gera blocos
+    # gera Blocos
     blocos = gerar_blocos(dados)
+
     if not blocos:
-        print_user("Nenhum bloco identificado no CSV.")
+        print_user("Nenhum OSO identificado no CSV.")
         return
     
     # Instruções antes de iniciar o programa
@@ -600,8 +862,59 @@ def IniciarModulo_ProgramacaoLinha(dados):
     print("Pressione F10 para continuar...")
     keyboard.wait("F10")
 
-    #Seleciona os blocos
+    #Seleciona os Blocos
     seletorBlocos(dados, blocos)
+
+# -------------------------
+# Interface principal
+# -------------------------
+def main():
+    '''Módulo central do programa, menu inicial'''
+    dados, cabecalho = pedirCSV()
+    if dados is None:
+        return
+
+    # valida campos mínimos (esperados)
+    chavesObrigatorias = {"FaixaInicio", "FaixaFinal", "Intervalo", "Percurso", "TempTerm", "Frota", "Linha", "Dia", "Sentido", "Oso", "LinhaOso"}
+    chavesCabecalho = set(k for k in (cabecalho or []))
+    
+    # Normaliza chavesCabecalho
+    chavesCabecalho = set(h.strip() for h in (cabecalho or []))
+    chaveFaltando = chavesObrigatorias - chavesCabecalho
+    if chaveFaltando:
+        print_user(f"Erro: o CSV está faltando colunas obrigatórias: {', '.join(chaveFaltando)}")
+        main()
+    
+    while True:
+        print('''
+        Selecione o módulo:
+            [1] - Digitar programação de linha
+            [2] - Imprimir PDF
+
+            [0] - Voltar ao MENU
+        ''')
+
+        # escolhe módulo
+        deNovo = True
+        while deNovo:
+            escolha = input("Digite o número do módulo: ").strip()
+            time.sleep(0.5)
+            if escolha and escolha.isdigit():
+                n = int(escolha)
+                if n == 1:
+                    IniciarModulo_ProgramacaoLinha(dados)
+                elif n == 2:
+                    IniciarModulo_ImprimirPDFs(dados)
+                elif n == 0:
+                    main()
+                else:
+                    print_user("Entrada inválida")
+                    print("")
+                    continue
+            else:
+                print_user("Entrada inválida")
+                print("")
+                continue
 
 def intro():
     '''Mensagem de introdução ao sistema'''
@@ -619,263 +932,6 @@ def intro():
 # -------------------------
 if __name__ == "__main__":
     intro()
-
-#=======================================#
-
-# -------------------------
-# Normalização de OSOs
-# -------------------------
-def tratarOSOs(osoBruta):
-    """
-    Verifica a formatação das OSOs [123456], 
-    identifica se é Base ou Derivada e 
-    relaciona com a respectiva Linha 
-    """
-
-    osos = []
-
-    for row in enumerate(osoBruta):
-        
-        linha = row.get("Linha", row.get("Linha ", "")).strip()
-        oso = row.get("Oso", row.get("Oso ", "")).strip()
-
-        if len(oso) == 6 and oso.isdigit():
-            if oso[2:] == "00":
-                osos.append({
-                    "linha": linha,
-                    "osos": oso,
-                    "tipo": "B"
-                })
-            else:
-                osos.append({
-                    "linha": linha,
-                    "osos": oso,
-                    "tipo": "D"
-                })
-        else:
-            print_user(f"OSO [{osoBruta}] | formato inválido seguir o formato: [123456]")
-            return
-            
-    filtoB = lambda x: x["tipo"] == "B"
-    filtoD = lambda x: x["tipo"] == "D"
-    ososBase = list(filter(filtoB, osos))
-    ososDerivada = list(filter(filtoD, osos))
-
-    print_user(f"{len(osos)} osos idenficadas. | B:{len(ososBase)} D:{len(ososDerivada)} ")
-    return osos
-
-# -------------------------
-# Impressão de um PDF
-# -------------------------
-def imprimirPDF(row, oso_label):
-    """
-    EXPLICAÇÃO AQUI
-
-    """
-
-    # preserva strings originais
-    linha = row.get("Linha", row.get("Linha ", "")).strip()
-    oso = row.get("Oso", row.get("Oso ", "")).strip()
-    tipo = row.get("Tipo", row.get("Tipo ", "")).strip()
-    fQH = row.get("FQH", row.get("FQH ", "")).strip()
-    NomePDF = f"{fQH} {linha} {oso}"
-
-    # --------------------------
-    # Início do preenchimento
-    
-    # console
-    print(tabulate([[fQH, linha]],
-               headers=["FQH", "LINHA"],
-               tablefmt="rounded_grid"))
-
-    '''
-    
-    SEQUENCIA DE:
-
-    pyautogui.press("tab")
-    registrar_log(f"[{oso_label}] tab → campo OSO")
-
-    pyautogui.write()
-    registrar_log(f"[{oso_label}] escreveu OSO '{oso}'")
-    time.sleep(0.1)
-
-    LÓGICA:
-
-    Tab     | Informe o N° da OSO -> Imprimir em
-
-    if OsoAtiva:
-        # Aviso de OSO filha detectada
-        Tab     | SIM -> NÃO
-        Enter   | Confirma NÃO
-
-    Tab     | Imprimir em -> Configurar
-    Tab     | Configurar -> Imprimir
-    Enter   | Confirma Imprimir
-
-    DIGITA NomePdf
-
-    Enter   | Confirma SALVAR
-
-    if PdfExiste:
-        # PDF salvo com sucesso
-    else:
-        # PDF não encontrado, verifique a pasta SALVAR
-
-        # Escolha repetir ou continuar
-    
-    # Escolha repetir ou continuar
-
-    '''
-
-    # final do preenchimento da faixa
-    registrar_log(f"[{oso_label}] PDF {NomePDF} lançado")
-    print_user(f"{oso_label} • OSO lançada | F10 para continuar | F9 para repetir | F12 para parar ")
-
-# -------------------------
-# Selecionar OSO a ser preenchida
-# -------------------------
-def seletorOsos(linhaOso, osos):
-    
-    # Escolha  a OSO
-    
-    oso_inicial_index = 0
-    preencher_PDFs(linhaOso, osos, oso_inicial_index)
-
-# -------------------------
-# Impressão de OSOs (controle de interação F10/F12)
-# -------------------------
-def preencher_PDFs(linhaOso, osos, oso_inicial_index):
-    """
-    Percorre osos a partir de oso_inicial_index (0-based index na lista 'osos').
-    Para cada faixa dentro do bloco chama preencher_faixa().
-    Aguarda F10 entre faixas; F12 encerra tudo.
-    """
-
-    global parar_execucao
-
-    total_osos = len(osos)
-    # itera osos a partir da escolha do usuário
-    for idx_bloco, bloco in enumerate(osos[oso_inicial_index:], start=oso_inicial_index): # Mantive 'start' ajustado
-        id_bloco = bloco["id_bloco"]
-        inicio = bloco["inicio"]
-        fim = bloco["fim"]
-        count = bloco["count"]
-
-        registrar_log(f"INICIO_BLOCO {id_bloco} linhaOso {inicio+1}-{fim+1}")
-
-        print(tabulate([[id_bloco]],
-                       headers=["Bloco"],
-                       tablefmt="rounded_grid"))
-
-        # itera dentro do bloco: trecho de linhas
-        trecho = linhaOso[inicio:fim+1]
-        faixaFimAnterior = None  # para detectar virada comparando com a faixa anterior dentro do bloco
-
-        offset = 0 # Inicializa o índice relativo dentro do 'trecho'
-        while offset < count: # count é o len(trecho)
-
-            row = trecho[offset]
-            
-            escutador_tecla()
-            if parar_execucao:
-                registrar_log("Parada solicitada — encerrando preenchimento.")
-                print_user("Execução encerrada pelo usuário.")
-                return
-
-            i_global = inicio + offset
-            oso_label = bloco["id_bloco"]  # label amigável para logs e prints
-
-            # timer antes de iniciar na primeira vez
-            if offset == 0:
-                print_user("")
-                print_user("  [+] Tempo de 5s para ajustar o cusor no SIGET [+] ")
-                print_user("")
-                time.sleep(5)
-
-            # imprime resumo ao usuário: ação principal
-            print_user(f">>> Processando faixa {offset+1}/{count}")
-
-            # chama a rotina que faz os pyautogui.write / press etc.
-            preencher_faixa(row, oso_label, faixaFimAnterior=faixaFimAnterior)
-
-            # atualiza faixaFimAnterior para a próxima iteração (usa raw values)
-            faixaFimAnterior = (row.get("FaixaFim", ""))
-
-            # controle de avanço: se não é a última faixa do bloco, espera F10;
-            # se for a última, espera F10 para ir ao próximo bloco (ou F12)
-            is_last = (offset == count - 1)
-            
-            registrar_log(f"AGUARDANDO_F10_F9_F12 faixa {offset+1} do bloco {id_bloco}")
-            
-            # loop leve aguardando tecla
-            while True:
-                escutador_tecla()
-                if parar_execucao:
-                    registrar_log("Parada solicitada durante espera de F10.")
-                    print_user(" >>> Execução encerrada pelo usuário.")
-                    return
-                if keyboard.is_pressed("F10"):
-                    time.sleep(0.18)
-                    registrar_log(f" >>> F10 pressionado — avançando para faixa {offset+2} do bloco {id_bloco}")
-                    offset += 1 
-                    break
-                if keyboard.is_pressed("F9"):
-                    time.sleep(0.18)
-                    registrar_log(f" >>> F9 pressionado — repetindo faixa {offset+1} do bloco {id_bloco}")
-                    is_last = False
-                    break
-                time.sleep(0.06)
-
-            if is_last:
-                # último da lista do bloco
-                offset += 1
-
-                print("")
-                print_user(f" [+] Bloco {id_bloco} finalizado ({count} faixas horárias).  [+] ")
-                registrar_log(f"FIM_BLOCO {id_bloco}")
-                print("")
-                
-                # Verifica se há um próximo bloco
-                prox_idx = idx_bloco - oso_inicial_index  # posição relativa no enumerate
-                if prox_idx < total_osos - 1:
-                    prox_id_bloco = osos[oso_inicial_index + prox_idx + 1]["id_bloco"]
-                    registrar_log(f">>> Próximo bloco: {prox_id_bloco}")
-                    print(tabulate([[prox_id_bloco, len(prox_id_bloco)]],
-               headers=["Prox. Bloco", "Qtd Faixas"],
-               tablefmt="rounded_grid"))
-                else:
-                    prox_id_bloco = None
-                    print_user(">>> Este foi o último bloco.")
-                print_user(">>> Pressione F10 para iniciar o próximo bloco | F9 para selecionar bloco | F12 para encerrar")
-                # Espera F10, F9 ou F12
-                while True:
-                    escutador_tecla()
-                    if parar_execucao:
-                        registrar_log("Parada solicitada na finalização de bloco.")
-                        print_user("Execução encerrada pelo usuário.")
-                        return
-                    if keyboard.is_pressed("F10"):
-                        time.sleep(0.18)
-                        if prox_id_bloco:
-                            registrar_log(f" >>> F10 pressionado — iniciando próximo bloco ({prox_id_bloco})")
-                        else:
-                            registrar_log(" >>> F10 pressionado — não há próximo bloco (fim).")
-                        break
-                    if keyboard.is_pressed("F9"):
-                        time.sleep(0.18)
-                        registrar_log(f" >>> F9 pressionado iniciando seletor de osos")
-                        seletorOsos(linhaOso, osos)
-                        break
-                    time.sleep(0.06)
-        
-        # fim do bloco — segue para próximo bloco no for
-        # pequeno delay entre osos
-        time.sleep(0.15)
-        
-    # todos osos processados
-    print_user("Todos os osos processados.")
-    registrar_log("PROCESSAMENTO_COMPLETO")
-    main()
 
 
 
