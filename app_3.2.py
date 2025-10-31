@@ -652,8 +652,6 @@ def imprimirPDF(row, oso, OsoAtiva, OsoDerivada, fQH):
 
     # final do preenchimento da faixa
     
-
-
 # -------------------------
 # Impressão de OSOs (controle de interação F10/F12)
 # -------------------------
