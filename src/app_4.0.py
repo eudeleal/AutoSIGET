@@ -59,9 +59,9 @@ class log:
 # Funções utilitárias de horário
 # -------------------------
 class formatHora:
-    
+
     def log(h: str):
-        """Formato para logs/prints: 'HHMM' -> 'HH:MM' """
+        # Formato para logs/prints: 'HHMM' -> 'HH:MM'
         h = (h or "").strip()
         if len(h) == 4 and h.isdigit():
             return f"{h[:2]}:{h[2:]}"
@@ -70,7 +70,7 @@ class formatHora:
         return h
 
     def dig(h: str):
-        """Formato para digitação (mantém '000' -> '000', '044' -> '0044')."""
+        # Formato para digitação (mantém '000' -> '000', '044' -> '0044').
         h = (h or "").strip()
         if len(h) == 3 and h.isdigit():
             return f"0{h}"

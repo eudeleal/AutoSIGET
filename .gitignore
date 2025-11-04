@@ -18,9 +18,6 @@ AutoSiget3000/
 *.xlsx
 *.bak
 *.tmp
-*.ico
-*.txt
-*.ipynb
 
 # --- BUILD E DISTRIBUIÇÃO ---
 build/
