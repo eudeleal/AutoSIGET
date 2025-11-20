@@ -135,8 +135,8 @@ INCIO {
         preencher_blocos(csv, blocos, bloco_inicio_index)
         < return trecho [list], faixaFimAnterior [string], prox_idx [string], prox_id_bloco [string]
         
-        preencher_faixa(row, linha_label, faixaFimAnterior)
-        < return none
+            preencher_faixa(row, linha_label, faixaFimAnterior)
+            < return none
 
 
     class ImprimirPDFs(csv)
@@ -149,6 +149,16 @@ INCIO {
         preencher_PDFs(osos, osos_inicial_index)
         < return fQH [string], OsoAtiva [bool], OsoDerivada [bool],  row [int], osos [list[dict]]
         
-        imprimirPDF(row, osos, OsoAtiva, OsoDerivada, fQH)
-        < return none
+            imprimirPDF(row, osos, OsoAtiva, OsoDerivada, fQH)
+            < return none
 } FIM
+
+
+
+0400    0500    30  106 5   3   
+0535    0645    35  130 5   4   
+0725    0805    40  144 5   4   
+0850    1530    50  139 5   4   
+1610    1810    40  139 5   4   
+1900    2040    50  127 5   4   
+2150    2150    0   114 5   2   
