@@ -334,7 +334,7 @@ class ProgramaLinha:
         # preserva strings originais
         faixaIni_raw = row.get("FaixaInicio", row.get("FaixaInicio ", "")).strip()
         faixaFim_raw = row.get("FaixaFinal", row.get("FaixaFinal ", "")).strip()
-        Interv = row.get("Interv", row.get("Interv", "")).strip()
+        Interv = row.get("Intervalo", row.get("Intervalo", "")).strip()
         tPerc = row.get("Percurso", row.get("Perc.", row.get("Perc", ""))).strip()
         tTerm = row.get("TempTerm", row.get("T. Term", row.get("T. Term ", ""))).strip()
         frota = row.get("Frota", "").strip()
@@ -823,10 +823,6 @@ class PrintPDF:
         Log.user(f"Preenchendo OSO:     {oso_dig}")
         time.sleep(0.2)
 
-        pyautogui.press('left', presses=6, interval=0.1)
-        Log.save(f"[{oso_dig}] 6x seta para esquerda")
-        time.sleep(0.1)
-
         pyautogui.press('tab')
         Log.save(f"[{oso_dig}] Insira o n.º da OSO ≥ Impressão Gráfica")
         time.sleep(0.2)
@@ -849,6 +845,10 @@ class PrintPDF:
         pyautogui.hotkey('shift', 'tab')
         Log.save(f"[{oso_dig}] botão Imprimir ≥ Informe o N° da oso")
         time.sleep(0.2)
+
+        pyautogui.press('left', presses=6, interval=0.1)
+        Log.save(f"[{oso_dig}] 6x seta para esquerda")
+        time.sleep(0.1)
 
         ''''
         # Cria um PDF fake (arquivo vazio ou com texto de teste)
@@ -1060,4 +1060,4 @@ if __name__ == "__main__":
 # ===================
 
 # Brasil
-# Salvador, BA - 20255
+# Salvador, BA - 2025
