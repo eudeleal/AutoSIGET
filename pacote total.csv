@@ -1,4 +1,4 @@
-FaixaInicio; FaixaFinal; Intervalo; Percurso; TempTerm; Frota; Linha; Dia; Sentido; Oso   ; LinhaOso
+FaixaInicio; FaixaFinal; Interv; Percurso; TempTerm; Frota; Linha; Dia; Sentido; Oso   ; LinhaOso
        0440;       0440;         0;      162;        5;     1;  1001; Sab;       0; 476700;     1001
        0515;       0530;        15;      170;        5;     3;  1001; Sab;       0; 476701;   100101
        0544;       0551;         7;      171;        5;     5;  1001; Sab;       0; 476800;     1035
