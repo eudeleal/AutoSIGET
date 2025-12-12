@@ -27,6 +27,8 @@ build/
 *.egg-info/
 *.egg
 *.spec
+*.ico
+*.txt
 
 # --- FERRAMENTAS E CONFIGURAÇÕES LOCAIS ---
 .vscode/
